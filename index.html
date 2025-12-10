@@ -125,16 +125,17 @@
                     title: "University Common Core (30 Credits)",
                     color: "bg-pink-100 text-pink-800",
                     requirements: [
-                        { id: "cc_legal", name: "Legal Education", code: "LEGL 1000", status: STATUS.COMPLETED, grade: "P" },
-                        { id: "cc_hmw", name: "Habits, Mindsets & Wellness", code: "HMAW 1905B", status: STATUS.COMPLETED, grade: "P" },
-                        { id: "cc_ecomm1", name: "English Comm I", code: "LANG 1402", status: STATUS.COMPLETED, grade: "T", note: "Transfer Credit" },
-                        { id: "cc_ecomm2", name: "English Comm II", code: "LANG 1404", status: STATUS.COMPLETED, grade: "A-" },
-                        { id: "cc_ccomm", name: "Chinese Comm", code: "LANG 1113", status: STATUS.NOT_STARTED, note: "Or other C-Comm course" },
-                        { id: "cc_arts", name: "Arts (Broadening)", code: "CORE BROAD", status: STATUS.COMPLETED, grade: "T", note: "Transfer Credit" },
-                        { id: "cc_huma", name: "Humanities (Broadening)", code: "CORE BROAD", status: STATUS.COMPLETED, grade: "T", note: "Transfer Credit" },
-                        { id: "cc_sci", name: "Science (Broadening)", code: "BIEN 1610", status: STATUS.IN_PROGRESS, note: "Taken Fall 25-26" },
-                        { id: "cc_ctdl", name: "Critical Thinking & Data Lit", code: "", status: STATUS.NOT_STARTED, type: "text_input" },
-                        { id: "cc_exp", name: "Experiencing (UxOP)", alternatives: ["UPOP 1920", "UPOP 2920"], status: STATUS.COMPLETED, grade: "P", note: "Satisfied by UPOP" }
+                        { id: "cc_legal", name: "Legal Education", code: "LEGL 1000", status: STATUS.COMPLETED, grade: "P", note: "Foundations I" },
+                        { id: "cc_hmw", name: "Habits, Mindsets & Wellness", code: "HMAW 1905B", status: STATUS.COMPLETED, grade: "P", note: "Foundations I (3 credits)" },
+                        { id: "cc_ecomm1", name: "English Comm I", code: "LANG 1402", status: STATUS.COMPLETED, grade: "T", note: "Foundations I - E-Comm (3 credits)" },
+                        { id: "cc_ecomm2", name: "English Comm II", code: "LANG 1404", status: STATUS.COMPLETED, grade: "A-", note: "Foundations I - E-Comm (3 credits)" },
+                        { id: "cc_ccomm", name: "Chinese Comm (C-Comm)", code: "LANG 1113", status: STATUS.NOT_STARTED, note: "Foundations I (3 credits needed)" },
+                        { id: "cc_arts", name: "Arts (A) - Broadening", code: "CORE BROAD", status: STATUS.COMPLETED, grade: "T", note: "Transfer Credit (3 credits)" },
+                        { id: "cc_huma", name: "Humanities (H) - Broadening", code: "CORE BROAD", status: STATUS.COMPLETED, grade: "T", note: "Transfer Credit (3 credits)" },
+                        { id: "cc_sci", name: "Science (S) - Broadening", code: "BIEN 1610", status: STATUS.IN_PROGRESS, note: "Broadening (3 credits)" },
+                        { id: "cc_ctdl", name: "Critical Thinking & Data Lit (CTDL)", code: "", status: STATUS.NOT_STARTED, type: "text_input", note: "Foundations II (3 credits needed)" },
+                        { id: "cc_exp_upop1", name: "UPOP Pre-internship Training", code: "UPOP 1920", status: STATUS.COMPLETED, grade: "P", note: "Experiencing (1 credit)" },
+                        { id: "cc_exp_upop2", name: "UG Practice Opportunities", code: "UPOP 2920", status: STATUS.COMPLETED, grade: "P", note: "Experiencing (2 credits)" }
                     ]
                 },
                 {
@@ -150,6 +151,7 @@
                         { id: "sci_phys", name: "Physics", alternatives: ["PHYS 1112", "PHYS 1312", "PHYS 1101"], status: STATUS.COMPLETED, taken: "PHYS 1101", grade: "A" },
                         { id: "sci_bio", name: "Biology (Science Elective)", alternatives: ["LIFS 1901"], status: STATUS.COMPLETED, taken: "LIFS 1901", grade: "T" },
                         { id: "eng_intro", name: "Engg Intro", alternatives: ["CENG 1500", "ELEC 1100", "MECH 1901"], status: STATUS.COMPLETED, taken: "CENG 1500", grade: "A-", note: "SENG Intro Requirement" },
+                        { id: "engg_2010", name: "Engg Seminar", code: "ENGG 2010", status: STATUS.IN_PROGRESS, note: "Engineering requirement" },
                         { id: "tech_comm_1", name: "Tech Comm I", alternatives: ["LANG 2030"], status: STATUS.COMPLETED, note: "Waived for DDP or met by LANG 1404 track" },
                     ]
                 },
@@ -201,8 +203,7 @@
                         { id: "mgmt_2010", name: "Biz Ethics", code: "MGMT 2010", status: STATUS.COMPLETED, grade: "A" },
                         { id: "mgmt_2110", name: "Org Behavior", code: "MGMT 2110", status: STATUS.COMPLETED, grade: "A+" },
                         { id: "fina_2303", name: "Financial Mgmt", code: "FINA 2303", status: STATUS.COMPLETED, grade: "A" },
-                        { id: "mgmt_2130", name: "Biz Ethics & Soc Resp", code: "MGMT 2130", status: STATUS.IN_PROGRESS },
-                        { id: "mgmt_3140", name: "Negotiation", code: "MGMT 3140", status: STATUS.IN_PROGRESS, note: "DDP Requirement" }
+                        { id: "mgmt_2130", name: "Biz Ethics & Soc Resp", code: "MGMT 2130", status: STATUS.IN_PROGRESS }
                     ]
                 },
                 {
@@ -228,8 +229,6 @@
                         { id: "temg_1010", name: "T&M Prof Activities", code: "TEMG 1010", status: STATUS.IN_PROGRESS },
                         { id: "temg_3950", name: "Case Analysis", code: "TEMG 3950", status: STATUS.COMPLETED, grade: "B+" },
                         { id: "temg_4950", name: "Capstone Project", code: "TEMG 4950", status: STATUS.NOT_STARTED },
-                        { id: "engg_2010", name: "Engg Seminar", code: "ENGG 2010", status: STATUS.IN_PROGRESS },
-                        { id: "bien_1610", name: "Synthetic Bio (Science)", code: "BIEN 1610", status: STATUS.IN_PROGRESS },
                     ]
                 }
             ]
