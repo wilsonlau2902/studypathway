@@ -394,7 +394,8 @@
                 "2025-26 Spring": [],
                 "2026-27 Fall": [],
                 "2026-27 Spring": [],
-                "2027-28 Fall": []
+                "2027-28 Fall": [],
+                "2027-28 Spring": []
             }
         };
 
@@ -415,6 +416,7 @@
                 return initialData;
             });
             const [isProcessing, setIsProcessing] = useState(false);
+            const [processStatus, setProcessStatus] = useState("");
             const [report, setReport] = useState(null);
             const chartRef = useRef(null);
 
