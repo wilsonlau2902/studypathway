@@ -389,7 +389,13 @@
             studentId: "21011686",
             offeredCourses: [],
             courseCatalogs: { COMP: DEFAULT_COMP_DB, FINA: DEFAULT_FINA_DB },
-            categories: categoriesStructure
+            categories: categoriesStructure,
+            semesterPlan: {
+                "2025-26 Spring": [],
+                "2026-27 Fall": [],
+                "2026-27 Spring": [],
+                "2027-28 Fall": []
+            }
         };
 
         const App = () => {
@@ -688,6 +694,141 @@
                 );
             };
 
+            const SemesterPlanner = () => {
+                const [draggedCourse, setDraggedCourse] = useState(null);
+                
+                const getPlannableCourses = () => {
+                    const planned = [];
+                    data.categories.forEach(cat => {
+                        cat.requirements.forEach(req => {
+                            if (req.status === STATUS.NOT_STARTED || req.status === STATUS.PLANNED) {
+                                const courseCode = req.selectedValue || req.code || req.alternatives?.[0];
+                                if (courseCode && courseCode !== "Select Elective" && courseCode !== "") {
+                                    planned.push({
+                                        code: courseCode,
+                                        name: req.name,
+                                        category: cat.title,
+                                        isOffered: data.offeredCourses?.includes(courseCode)
+                                    });
+                                }
+                            }
+                        });
+                    });
+                    return planned;
+                };
+
+                const addCourseToSemester = (semester, course) => {
+                    const newData = { ...data };
+                    if (!newData.semesterPlan[semester].some(c => c.code === course.code)) {
+                        newData.semesterPlan[semester].push(course);
+                        setData(newData);
+                    }
+                };
+
+                const removeCourseFromSemester = (semester, courseCode) => {
+                    const newData = { ...data };
+                    newData.semesterPlan[semester] = newData.semesterPlan[semester].filter(c => c.code !== courseCode);
+                    setData(newData);
+                };
+
+                const getCreditsForSemester = (semester) => {
+                    return data.semesterPlan[semester]?.length * 3 || 0; // Assuming 3 credits per course
+                };
+
+                return (
+                    <div className="p-6">
+                        <div className="mb-6">
+                            <h2 className="text-2xl font-bold text-gray-800 mb-2">Semester Planner</h2>
+                            <p className="text-sm text-gray-600">Plan your future semesters. Drag courses from "Remaining Courses" to your desired semester.</p>
+                        </div>
+
+                        <div className="grid md:grid-cols-2 gap-6">
+                            {/* Remaining Courses */}
+                            <div className="bg-white rounded-xl shadow p-6">
+                                <h3 className="text-lg font-bold mb-4 text-gray-800 border-b pb-2">
+                                    <i className="fas fa-list-ul mr-2 text-blue-600"></i>Remaining Courses
+                                </h3>
+                                <div className="space-y-2 max-h-[600px] overflow-y-auto">
+                                    {getPlannableCourses().map(course => {
+                                        const isPlanned = Object.values(data.semesterPlan).some(sem => 
+                                            sem.some(c => c.code === course.code)
+                                        );
+                                        return (
+                                            <div
+                                                key={course.code}
+                                                draggable
+                                                onDragStart={() => setDraggedCourse(course)}
+                                                onDragEnd={() => setDraggedCourse(null)}
+                                                className={`p-3 rounded border-2 ${
+                                                    isPlanned 
+                                                        ? 'bg-gray-50 border-gray-200 opacity-50' 
+                                                        : 'bg-white border-blue-200 hover:border-blue-400 cursor-move hover:shadow'
+                                                }`}
+                                            >
+                                                <div className="flex items-center justify-between">
+                                                    <div className="flex items-center gap-2">
+                                                        <i className="fas fa-grip-vertical text-gray-300"></i>
+                                                        <span className="font-bold text-sm text-gray-800">{course.code}</span>
+                                                        {course.isOffered && <span className="badge-offered">OFFERED</span>}
+                                                    </div>
+                                                </div>
+                                                <div className="text-xs text-gray-500 ml-6 mt-1">{course.name}</div>
+                                                {isPlanned && <div className="text-xs text-gray-400 ml-6 mt-1 italic">Already planned</div>}
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            </div>
+
+                            {/* Semester Columns */}
+                            <div className="space-y-4">
+                                {Object.keys(data.semesterPlan).map(semester => (
+                                    <div
+                                        key={semester}
+                                        onDragOver={(e) => e.preventDefault()}
+                                        onDrop={() => draggedCourse && addCourseToSemester(semester, draggedCourse)}
+                                        className="bg-white rounded-xl shadow p-4 border-2 border-dashed border-gray-200 hover:border-blue-300 transition"
+                                    >
+                                        <div className="flex justify-between items-center mb-3">
+                                            <h3 className="font-bold text-gray-800">
+                                                <i className="fas fa-calendar mr-2 text-indigo-600"></i>{semester}
+                                            </h3>
+                                            <span className="text-xs bg-gray-100 px-2 py-1 rounded font-semibold">
+                                                {getCreditsForSemester(semester)} credits
+                                            </span>
+                                        </div>
+                                        <div className="space-y-2 min-h-[80px]">
+                                            {data.semesterPlan[semester].length === 0 ? (
+                                                <div className="text-center text-gray-400 text-sm py-4 italic">Drop courses here</div>
+                                            ) : (
+                                                data.semesterPlan[semester].map(course => (
+                                                    <div
+                                                        key={course.code}
+                                                        className="p-2 bg-blue-50 border border-blue-200 rounded flex justify-between items-center"
+                                                    >
+                                                        <div>
+                                                            <span className="font-bold text-sm text-gray-800">{course.code}</span>
+                                                            {course.isOffered && <span className="badge-offered ml-2">OFFERED</span>}
+                                                            <div className="text-xs text-gray-600">{course.name}</div>
+                                                        </div>
+                                                        <button
+                                                            onClick={() => removeCourseFromSemester(semester, course.code)}
+                                                            className="text-red-500 hover:text-red-700 ml-2"
+                                                        >
+                                                            <i className="fas fa-times"></i>
+                                                        </button>
+                                                    </div>
+                                                ))
+                                            )}
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+                );
+            };
+
             const StrategyTable = () => (
                 <div className="mt-8 bg-white rounded-xl shadow overflow-hidden">
                     <div className="px-6 py-4 border-b border-gray-100 bg-gray-50">
@@ -804,6 +945,7 @@
                             </div>
                             <div className="flex gap-8 border-b">
                                 <button onClick={() => setActiveTab('tracker')} className={`pb-2 px-1 ${activeTab === 'tracker' ? 'tab-active' : 'tab-inactive'}`}>Pathway Tracker</button>
+                                <button onClick={() => setActiveTab('planner')} className={`pb-2 px-1 ${activeTab === 'planner' ? 'tab-active' : 'tab-inactive'}`}>Semester Planner</button>
                                 <button onClick={() => setActiveTab('electives')} className={`pb-2 px-1 ${activeTab === 'electives' ? 'tab-active' : 'tab-inactive'}`}>Electives Explorer</button>
                                 <button onClick={() => setActiveTab('strategy')} className={`pb-2 px-1 ${activeTab === 'strategy' ? 'tab-active' : 'tab-inactive'}`}>Strategy Matrix</button>
                             </div>
@@ -811,7 +953,7 @@
                     </div>
 
                     <div className="max-w-6xl mx-auto px-4 mt-6">
-                        {activeTab === 'electives' ? <ElectivesExplorer /> : activeTab === 'strategy' ? (
+                        {activeTab === 'planner' ? <SemesterPlanner /> : activeTab === 'electives' ? <ElectivesExplorer /> : activeTab === 'strategy' ? (
                             <div>
                                 <div className="bg-white p-6 rounded-xl shadow h-[500px]">
                                     <h2 className="text-xl font-bold mb-2 text-gray-800">Elective Landscape</h2>
