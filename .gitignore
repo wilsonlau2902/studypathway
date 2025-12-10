@@ -1,0 +1,12 @@
+# PDF files containing personal information
+*.pdf
+
+# macOS system files
+.DS_Store
+
+# Editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
