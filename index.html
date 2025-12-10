@@ -44,6 +44,8 @@
 
         .tab-active { border-bottom: 2px solid #2563eb; color: #2563eb; font-weight: 600; }
         .tab-inactive { color: #64748b; font-weight: 500; }
+        
+        .badge-offered { background-color: #dcfce7; color: #166534; font-size: 0.7rem; padding: 2px 6px; border-radius: 4px; font-weight: 700; border: 1px solid #bbf7d0; }
     </style>
 </head>
 <body>
@@ -63,7 +65,7 @@
             NOT_STARTED: 'not-started'
         };
 
-        // --- DEFAULT DATABASES (Fallbacks) ---
+        // --- DEFAULT DATABASES ---
         const DEFAULT_COMP_DB = {
             "AI / Theory": [
                 { code: "COMP 3211", name: "Fundamentals of Artificial Intelligence" },
@@ -114,11 +116,8 @@
         const initialData = {
             studentName: "LAU, Wai Ming",
             studentId: "21011686",
-            offeredCourses: [], // New Field for Schedule Parsing
-            courseCatalogs: {
-                COMP: DEFAULT_COMP_DB,
-                FINA: DEFAULT_FINA_DB
-            },
+            offeredCourses: [],
+            courseCatalogs: { COMP: DEFAULT_COMP_DB, FINA: DEFAULT_FINA_DB },
             categories: [
                 {
                     id: "common_core",
@@ -133,6 +132,7 @@
                         { id: "cc_arts", name: "Arts (A) - Broadening", code: "CORE BROAD", status: STATUS.COMPLETED, grade: "T", note: "Transfer Credit (3 credits)" },
                         { id: "cc_huma", name: "Humanities (H) - Broadening", code: "CORE BROAD", status: STATUS.COMPLETED, grade: "T", note: "Transfer Credit (3 credits)" },
                         { id: "cc_sci", name: "Science (S) - Broadening", code: "BIEN 1610", status: STATUS.IN_PROGRESS, note: "Broadening (3 credits)" },
+                        { id: "cc_broad_4", name: "Broadening Elective (Any Area)", code: "", status: STATUS.NOT_STARTED, type: "text_input", note: "Required 4th Broadening Course (3 credits)" },
                         { id: "cc_ctdl", name: "Critical Thinking & Data Lit (CTDL)", code: "", status: STATUS.NOT_STARTED, type: "text_input", note: "Foundations II (3 credits needed)" },
                         { id: "cc_exp_upop1", name: "UPOP Pre-internship Training", code: "UPOP 1920", status: STATUS.COMPLETED, grade: "P", note: "Experiencing (1 credit)" },
                         { id: "cc_exp_upop2", name: "UG Practice Opportunities", code: "UPOP 2920", status: STATUS.COMPLETED, grade: "P", note: "Experiencing (2 credits)" }
@@ -147,9 +147,8 @@
                         { id: "calc_1", name: "Calculus I", alternatives: ["MATH 1012", "MATH 1013", "MATH 1023"], status: STATUS.COMPLETED, taken: "MATH 1013", grade: "T" },
                         { id: "calc_2", name: "Calculus II", alternatives: ["MATH 1014", "MATH 1024"], status: STATUS.COMPLETED, taken: "MATH 1014", grade: "C-" },
                         { id: "lin_alg", name: "Linear Algebra", alternatives: ["MATH 2111", "MATH 2121", "MATH 2131"], status: STATUS.COMPLETED, taken: "MATH 2111", grade: "C+" },
-                        { id: "sci_chem", name: "Chemistry", alternatives: ["CHEM 1020", "CHEM 1008"], status: STATUS.COMPLETED, taken: "CHEM 1020", grade: "T" },
-                        { id: "sci_phys", name: "Physics", alternatives: ["PHYS 1112", "PHYS 1312", "PHYS 1101"], status: STATUS.COMPLETED, taken: "PHYS 1101", grade: "A" },
-                        { id: "sci_bio", name: "Biology (Science Elective)", alternatives: ["LIFS 1901"], status: STATUS.COMPLETED, taken: "LIFS 1901", grade: "T" },
+                        // Merged Science Requirement: PHYS 1101, CHEM 1020, LIFS 1901. One counts here, others go to free electives.
+                        { id: "sci_fund", name: "Science Fundamental", alternatives: ["CHEM 1008", "CHEM 1012", "CHEM 1020", "LIFS 1901", "PHYS 1101", "PHYS 1112", "PHYS 1312"], status: STATUS.COMPLETED, taken: "PHYS 1101", grade: "A", note: "Take ONE (3-4 credits). Extras (like CHEM, LIFS) count as Free Electives." },
                         { id: "eng_intro", name: "Engg Intro", alternatives: ["CENG 1500", "ELEC 1100", "MECH 1901"], status: STATUS.COMPLETED, taken: "CENG 1500", grade: "A-", note: "SENG Intro Requirement" },
                         { id: "engg_2010", name: "Engg Seminar", code: "ENGG 2010", status: STATUS.IN_PROGRESS, note: "Engineering requirement" },
                         { id: "tech_comm_1", name: "Tech Comm I", alternatives: ["LANG 2030"], status: STATUS.COMPLETED, note: "Waived for DDP or met by LANG 1404 track" },
@@ -167,10 +166,10 @@
                         { id: "comp_3111", name: "Software Engineering", code: "COMP 3111", status: STATUS.NOT_STARTED, prereqs: ["COMP 2012"] },
                         { id: "comp_3511", name: "Operating Systems", code: "COMP 3511", status: STATUS.NOT_STARTED, prereqs: ["COMP 2611"] },
                         { id: "comp_3711", name: "Algorithms", code: "COMP 3711", status: STATUS.IN_PROGRESS, prereqs: ["COMP 2711", "Calculus"] },
-                        { id: "comp_4900", name: "Acad. & Prof. Dev.", code: "COMP 4900", status: STATUS.IN_PROGRESS, note: "Must take every term in residency" },
-                        { id: "prob_stat", name: "Probability/Stats", alternatives: ["ELEC 2600", "IEDA 2520", "MATH 2411"], status: STATUS.IN_PROGRESS, taken: "IEDA 2520" },
-                        { id: "fyp", name: "Final Year Project", alternatives: ["COMP 4981", "COMP 4981H"], status: STATUS.NOT_STARTED, credits: 6 },
-                        { id: "ind_exp", name: "Industrial Experience", code: "COMP 1991", status: STATUS.NOT_STARTED, note: "Usually taken in Winter/Summer" },
+                        { id: "comp_4900", name: "Acad. & Prof. Dev.", code: "COMP 4900", status: STATUS.IN_PROGRESS, note: "Must take every term" },
+                        { id: "prob_stat", name: "Probability/Stats", alternatives: ["ELEC 2600", "IEDA 2520", "MATH 2411"], status: STATUS.IN_PROGRESS, taken: "IEDA 2520", note: "MATH 2411 recommended for COMP, but IEDA 2520 accepted" },
+                        { id: "fyp", name: "Final Year Project", alternatives: ["COMP 4981", "COMP 4981H", "COMP 4910"], status: STATUS.NOT_STARTED, credits: 6, note: "COMP 4910 (Co-op) satisfies this + Ind. Exp." },
+                        { id: "ind_exp", name: "Industrial Experience", code: "COMP 1991", status: STATUS.NOT_STARTED, note: "Or COMP 4910" },
                         { id: "lang_4030", name: "Tech Comm II", code: "LANG 4030", status: STATUS.NOT_STARTED, note: "For CSE/CPEG" }
                     ]
                 },
@@ -203,7 +202,8 @@
                         { id: "mgmt_2010", name: "Biz Ethics", code: "MGMT 2010", status: STATUS.COMPLETED, grade: "A" },
                         { id: "mgmt_2110", name: "Org Behavior", code: "MGMT 2110", status: STATUS.COMPLETED, grade: "A+" },
                         { id: "fina_2303", name: "Financial Mgmt", code: "FINA 2303", status: STATUS.COMPLETED, grade: "A" },
-                        { id: "mgmt_2130", name: "Biz Ethics & Soc Resp", code: "MGMT 2130", status: STATUS.IN_PROGRESS }
+                        { id: "bba_comm", name: "BBA Communication", alternatives: ["LANG 2061", "LANG 2062", "LANG 3060"], status: STATUS.NOT_STARTED, note: "School Req (3 credits)" },
+                        { id: "mgmt_2130", name: "Biz Ethics & Soc Resp", code: "MGMT 2130", status: STATUS.IN_PROGRESS },
                     ]
                 },
                 {
@@ -216,6 +216,8 @@
                         { id: "fina_3303", name: "Inter. Corp Finance", code: "FINA 3303", status: STATUS.NOT_STARTED, prereqs: ["FINA 2303"] },
                         { id: "fina_3001", name: "Key Skills Finance", code: "FINA 3001", status: STATUS.IN_PROGRESS },
                         { id: "fina_3810", name: "Bloomberg Cert", code: "FINA 3810", status: STATUS.IN_PROGRESS },
+                        { id: "acct_3030", name: "Intermediate Financial Accounting", alternatives: ["ACCT 3030", "ACCT 3010 + ACCT 3020"], status: STATUS.NOT_STARTED, note: "ACCT 3030 for Non-ACCT majors" },
+                        { id: "isom_prog", name: "Business Programming", alternatives: ["ISOM 3230", "ISOM 3400", "COMP 1022P"], status: STATUS.NOT_STARTED, note: "Since you took COMP 1021, take one of these." },
                         { id: "fina_elec_1", name: "Finance Elective 1 (3000+)", code: "Select FINA Elective", status: STATUS.NOT_STARTED, type: "dropdown", dbKey: "FINA" },
                         { id: "fina_elec_2", name: "Finance Elective 2 (3000+)", code: "Select FINA Elective", status: STATUS.NOT_STARTED, type: "dropdown", dbKey: "FINA" },
                         { id: "fina_elec_3", name: "Finance Elective 3 (3000+)", code: "Select FINA Elective", status: STATUS.NOT_STARTED, type: "dropdown", dbKey: "FINA" },
@@ -230,19 +232,22 @@
                         { id: "temg_3950", name: "Case Analysis", code: "TEMG 3950", status: STATUS.COMPLETED, grade: "B+" },
                         { id: "temg_4950", name: "Capstone Project", code: "TEMG 4950", status: STATUS.NOT_STARTED },
                     ]
+                },
+                {
+                    id: "free_electives",
+                    title: "Free Electives / Unused Courses",
+                    color: "bg-gray-100 text-gray-800",
+                    description: "Courses taken that don't fit major requirements but count towards 120 credits. (e.g. SBMT6020G, MGMT3140)",
+                    requirements: [] // Auto-filled by transcript
                 }
             ]
         };
 
         const App = () => {
-            const [activeTab, setActiveTab] = useState("tracker"); // tracker | electives
+            const [activeTab, setActiveTab] = useState("tracker"); 
             const [data, setData] = useState(() => {
-                const saved = localStorage.getItem('my_pathway_data_v9');
-                if (saved) {
-                    const parsed = JSON.parse(saved);
-                    if (!parsed.offeredCourses) parsed.offeredCourses = []; // Init new field
-                    return parsed;
-                }
+                const saved = localStorage.getItem('my_pathway_data_v15');
+                if (saved) return JSON.parse(saved);
                 return initialData;
             });
             const [isProcessing, setIsProcessing] = useState(false);
@@ -250,9 +255,10 @@
             const [report, setReport] = useState(null);
             
             useEffect(() => {
-                localStorage.setItem('my_pathway_data_v9', JSON.stringify(data));
+                localStorage.setItem('my_pathway_data_v15', JSON.stringify(data));
             }, [data]);
 
+            // --- PDF HELPERS ---
             const getTextFromPDF = async (file) => {
                 const arrayBuffer = await file.arrayBuffer();
                 const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
@@ -265,87 +271,128 @@
                 return fullText.replace(/\s+/g, ' '); 
             };
 
-            // --- 3. SCHEDULE/QUOTA PARSER (New) ---
-            const parseSchedule = async (file) => {
+            // --- 1. TRANSCRIPT PARSER (Updated for Free Electives Consumed Logic) ---
+            const parseTranscript = async (file) => {
                 setIsProcessing(true);
-                setProcessStatus("Analyzing Schedule PDF...");
+                setProcessStatus("Reading Transcript...");
                 try {
                     const text = await getTextFromPDF(file);
+                    // Updated Regex: Handles 4-digit codes, 5-char codes (1905B), and suffix codes (SBMT6020G)
+                    // Matches: "COMP 1021", "HMAW 1905B", "SBMT 6020G", "CORE BROAD"
+                    const courseRegex = /([A-Z]{3,4})\s?(\d{4}[A-Z0-9]?|BROAD)/g;
+                    
                     const newData = JSON.parse(JSON.stringify(data));
+                    const consumedCourses = new Set(); // Track courses used for requirements
+                    const updates = [];
                     
-                    // Regex for Schedule: Matches "COMP 1234 - Title" style headers
-                    // Looking for 4 uppercase letters, space, 4 digits, optional suffix, space, hyphen
-                    const scheduleRegex = /([A-Z]{4})\s+(\d{4}[A-Z]?)\s?-\s?([^(]+)/g;
-                    
-                    const offeredSet = new Set(newData.offeredCourses || []);
+                    // 1. First Pass: Fulfill Explicit Requirements
                     let match;
-                    let count = 0;
-                    
-                    while ((match = scheduleRegex.exec(text)) !== null) {
-                        const code = `${match[1]} ${match[2]}`;
-                        if (!offeredSet.has(code)) {
-                            offeredSet.add(code);
-                            count++;
+                    while ((match = courseRegex.exec(text)) !== null) {
+                        const code = `${match[1]} ${match[2]}`; // Normalized e.g., "SBMT 6020G"
+                        const cleanCode = code.replace(/\s/g, ''); // "SBMT6020G"
+                        
+                        const window = text.substring(match.index, match.index + 100);
+                        const gradeMatch = window.match(/\s([A-D][\+\-]?|F|T|P|PP|AU)(\s|$)/);
+                        
+                        if (gradeMatch) {
+                            const grade = gradeMatch[1];
+                            let status = (grade === 'PP') ? STATUS.IN_PROGRESS : STATUS.COMPLETED;
+                            let matchedReq = false;
+
+                            // Iterate all categories EXCEPT free electives to find matches
+                            newData.categories.forEach(cat => {
+                                if (cat.id === 'free_electives') return;
+                                
+                                cat.requirements.forEach(req => {
+                                    // Already satisfied requirements shouldn't consume new courses unless it's an improvement
+                                    // But here we simplify: check if this code fits this requirement
+                                    
+                                    const reqCodeClean = req.code ? req.code.replace(/\s/g, '') : '';
+                                    
+                                    // Direct Code Match
+                                    if (reqCodeClean === cleanCode) {
+                                        // Update the requirement
+                                        req.status = status;
+                                        req.grade = grade;
+                                        matchedReq = true;
+                                    } 
+                                    // Alternative Match
+                                    else if (req.alternatives) {
+                                        const cleanAlts = req.alternatives.map(a => a.replace(/\s/g, ''));
+                                        if (cleanAlts.includes(cleanCode)) {
+                                            // Only consume if this requirement isn't already filled by something else
+                                            // OR if this course IS the one that filled it
+                                            if (!req.taken || req.taken.replace(/\s/g,'') === cleanCode) {
+                                                req.status = status;
+                                                req.grade = grade;
+                                                req.taken = code;
+                                                matchedReq = true;
+                                            }
+                                        }
+                                    }
+                                });
+                            });
+
+                            if (matchedReq) {
+                                consumedCourses.add(cleanCode);
+                                updates.push(`Requirement Met: ${code}`);
+                            }
                         }
                     }
-                    
-                    newData.offeredCourses = Array.from(offeredSet);
-                    setData(newData);
-                    setReport({ 
-                        title: "Schedule Update Success", 
-                        success: true, 
-                        logs: [`Found ${count} new offered courses. Total offered: ${newData.offeredCourses.length}`] 
-                    });
 
+                    // 2. Second Pass: Populate Free Electives with Unconsumed Courses
+                    // Reset regex to scan again
+                    courseRegex.lastIndex = 0; 
+                    const freeCat = newData.categories.find(c => c.id === 'free_electives');
+                    // We don't wipe freeCat.requirements to avoid deleting manual entries, 
+                    // but for transcript parsing we typically want a clean slate of detected extras. 
+                    // Let's deduplicate instead.
+                    
+                    while ((match = courseRegex.exec(text)) !== null) {
+                         const code = `${match[1]} ${match[2]}`;
+                         const cleanCode = code.replace(/\s/g, '');
+                         const window = text.substring(match.index, match.index + 100);
+                         const gradeMatch = window.match(/\s([A-D][\+\-]?|F|T|P|PP|AU)(\s|$)/);
+
+                         if (gradeMatch) {
+                             const grade = gradeMatch[1];
+                             let status = (grade === 'PP') ? STATUS.IN_PROGRESS : STATUS.COMPLETED;
+
+                             // If NOT consumed and NOT "CORE BROAD" (placeholder), add to free electives
+                             if (!consumedCourses.has(cleanCode) && cleanCode !== 'COREBROAD') {
+                                 // Check if already in free electives to prevent dupes
+                                 if (!freeCat.requirements.some(r => r.code.replace(/\s/g, '') === cleanCode)) {
+                                     freeCat.requirements.push({
+                                         id: `free_${cleanCode}`,
+                                         name: "Free Elective / Extra",
+                                         code: code,
+                                         status: status,
+                                         grade: grade,
+                                         note: "Auto-detected from transcript"
+                                     });
+                                     updates.push(`Added Free Elective: ${code}`);
+                                     consumedCourses.add(cleanCode); // prevent adding same course twice
+                                 }
+                             }
+                         }
+                    }
+                    
+                    setData(newData);
+                    setReport({ title: "Transcript Processed", success: true, logs: updates.length ? updates : ["No changes detected."] });
                 } catch(e) {
-                    setReport({ title: "Error", success: false, logs: ["Failed to parse schedule file."] });
+                    console.error(e);
+                    setReport({ title: "Error", success: false, logs: ["Failed to parse transcript."] });
                 } finally {
                     setIsProcessing(false);
                 }
             };
 
-            // ... (Previous parsers: Transcript & Catalog remain same) ...
-            // Keeping them compact for brevity, they are identical to v8
-            const parseTranscript = async (file) => {
-                /* Same logic as v8 */
-                setIsProcessing(true); setProcessStatus("Reading Transcript...");
-                try {
-                    const text = await getTextFromPDF(file);
-                    const courseRegex = /([A-Z]{3,4})\s?(\d{4}[A-Z]?|BROAD)/g;
-                    const updates = []; const newData = JSON.parse(JSON.stringify(data));
-                    let match;
-                    while ((match = courseRegex.exec(text)) !== null) {
-                        const code = `${match[1]} ${match[2]}`;
-                        const window = text.substring(match.index, match.index + 100);
-                        const gradeMatch = window.match(/\s([A-D][\+\-]?|F|T|P|PP|AU)(\s|$)/);
-                        if (gradeMatch) {
-                            const grade = gradeMatch[1];
-                            let status = (grade === 'PP') ? STATUS.IN_PROGRESS : STATUS.COMPLETED;
-                            newData.categories.forEach(cat => cat.requirements.forEach(req => {
-                                let matchedReq = false;
-                                const reqCodeClean = req.code ? req.code.replace(/\s/g,'') : '';
-                                const parsedCodeClean = code.replace(/\s/g,'');
-                                if(reqCodeClean === parsedCodeClean) matchedReq = true;
-                                if(req.alternatives && req.alternatives.some(a => a.replace(/\s/g,'') === parsedCodeClean)) matchedReq = true;
-                                if(matchedReq && (req.status !== status || req.grade !== grade)) {
-                                    updates.push(`Updated: ${req.name} (${code})`);
-                                    req.status = status; req.grade = grade;
-                                    if(!req.code) req.taken = code;
-                                }
-                            }));
-                        }
-                    }
-                    setData(newData);
-                    setReport({ title: "Transcript Update", success: true, logs: updates.length ? updates : ["No new changes."] });
-                } catch(e) { setReport({ title: "Error", success: false, logs: ["Failed."] }); } finally { setIsProcessing(false); }
-            };
-
+            // ... (Catalog and Schedule parsers remain same) ...
             const parseCatalog = async (file) => {
-                /* Same logic as v8 */
                 setIsProcessing(true); setProcessStatus("Updating DB...");
                 try {
                     const text = await getTextFromPDF(file);
-                    const newCourses = []; const newData = JSON.parse(JSON.stringify(data));
+                    const newData = JSON.parse(JSON.stringify(data));
                     const catalogRegex = /([A-Z]{4})\s+(\d{4}[A-Z]?)\s+(.+?)(?=\s+\d+\s+Credit|\s+Previous|\s+Prerequisite)/g;
                     let match; let count = 0;
                     while ((match = catalogRegex.exec(text)) !== null) {
@@ -365,6 +412,24 @@
                 } catch(e) { setReport({ title: "Error", success: false, logs: ["Failed."] }); } finally { setIsProcessing(false); }
             };
 
+            const parseSchedule = async (file) => {
+                setIsProcessing(true); setProcessStatus("Analyzing Schedule...");
+                try {
+                    const text = await getTextFromPDF(file);
+                    const newData = JSON.parse(JSON.stringify(data));
+                    const scheduleRegex = /([A-Z]{4})\s+(\d{4}[A-Z]?)\s?-\s?([^(]+)/g;
+                    const offeredSet = new Set(newData.offeredCourses || []);
+                    let match; let count = 0;
+                    while ((match = scheduleRegex.exec(text)) !== null) {
+                        const code = `${match[1]} ${match[2]}`;
+                        if (!offeredSet.has(code)) { offeredSet.add(code); count++; }
+                    }
+                    newData.offeredCourses = Array.from(offeredSet);
+                    setData(newData);
+                    setReport({ title: "Schedule Update", success: true, logs: [`Found ${count} new offered courses.`] });
+                } catch(e) { setReport({ title: "Error", success: false, logs: ["Failed."] }); } finally { setIsProcessing(false); }
+            };
+
             const handleFile = (e, type) => {
                 const file = e.target.files[0];
                 if (!file) return;
@@ -374,54 +439,46 @@
                 e.target.value = null; 
             };
 
-            // --- ELECTIVES PAGE COMPONENT ---
+            // ... (Electives Explorer & Render Logic) ...
+            
             const ElectivesExplorer = () => {
                 const [showOfferedOnly, setShowOfferedOnly] = useState(false);
                 const [search, setSearch] = useState("");
-
-                const isOffered = (code) => data.offeredCourses.includes(code);
+                const isOffered = (code) => data.offeredCourses && data.offeredCourses.includes(code);
 
                 return (
                     <div className="p-6">
-                        <div className="flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
+                        <div className="flex justify-between items-center mb-6">
                             <h2 className="text-2xl font-bold text-gray-800">Electives Explorer</h2>
                             <div className="flex gap-4 items-center bg-white p-2 rounded shadow-sm">
                                 <label className="flex items-center gap-2 text-sm cursor-pointer select-none">
                                     <input type="checkbox" checked={showOfferedOnly} onChange={(e) => setShowOfferedOnly(e.target.checked)} className="rounded text-indigo-600" />
-                                    <span className={showOfferedOnly ? "text-indigo-600 font-bold" : "text-gray-600"}>Show Only Offered</span>
+                                    <span>Show Only Offered</span>
                                 </label>
                                 <input type="text" placeholder="Search..." className="border rounded px-3 py-1 text-sm" value={search} onChange={e => setSearch(e.target.value)} />
                             </div>
                         </div>
-
                         <div className="grid md:grid-cols-2 gap-8">
                             {Object.entries(data.courseCatalogs).map(([subject, categories]) => (
                                 <div key={subject} className="bg-white rounded-xl shadow p-6">
-                                    <h3 className="text-xl font-bold mb-4 border-b pb-2 text-gray-700">{subject} Electives</h3>
+                                    <h3 className="text-xl font-bold mb-4 border-b pb-2">{subject} Electives</h3>
                                     {Object.entries(categories).map(([category, courses]) => {
-                                        // Filter logic
                                         const visibleCourses = courses.filter(c => {
                                             const matchesSearch = c.name.toLowerCase().includes(search.toLowerCase()) || c.code.toLowerCase().includes(search.toLowerCase());
                                             const matchesOffer = showOfferedOnly ? isOffered(c.code) : true;
                                             return matchesSearch && matchesOffer;
                                         });
-
                                         if (visibleCourses.length === 0) return null;
-
                                         return (
                                             <div key={category} className="mb-6">
-                                                <h4 className="font-semibold text-sm text-gray-500 uppercase tracking-wider mb-3">{category}</h4>
+                                                <h4 className="font-semibold text-sm text-gray-500 uppercase mb-2">{category}</h4>
                                                 <div className="space-y-2">
                                                     {visibleCourses.map(c => (
-                                                        <div key={c.code} className="flex justify-between items-center p-3 rounded-lg bg-gray-50 hover:bg-gray-100 transition">
-                                                            <div>
-                                                                <div className="flex items-center gap-2">
-                                                                    <span className="font-bold text-gray-800">{c.code}</span>
-                                                                    {isOffered(c.code) && (
-                                                                        <span className="bg-green-100 text-green-700 text-[10px] px-2 py-0.5 rounded-full font-bold">OFFERED</span>
-                                                                    )}
-                                                                </div>
-                                                                <div className="text-sm text-gray-600">{c.name}</div>
+                                                        <div key={c.code} className="flex justify-between items-center p-2 rounded hover:bg-gray-50">
+                                                            <div className="flex items-center gap-2">
+                                                                <span className="font-bold text-gray-800 text-sm">{c.code}</span>
+                                                                {isOffered(c.code) && <span className="badge-offered">OFFERED</span>}
+                                                                <span className="text-sm text-gray-600 truncate max-w-[200px]">{c.name}</span>
                                                             </div>
                                                         </div>
                                                     ))}
@@ -436,8 +493,39 @@
                 );
             };
 
-            // Main Render
-            const csAreaStats = useMemo(() => { /* logic hidden for brevity, same as before */ 
+            // Handlers
+            const toggleStatus = (catId, reqId) => {
+                const newData = { ...data };
+                const req = newData.categories.find(c => c.id === catId).requirements.find(r => r.id === reqId);
+                const cycle = [STATUS.NOT_STARTED, STATUS.PLANNED, STATUS.IN_PROGRESS, STATUS.COMPLETED];
+                req.status = cycle[(cycle.indexOf(req.status) + 1) % cycle.length];
+                setData(newData);
+            };
+            const handleDropdown = (catId, reqId, val) => {
+                const newData = { ...data };
+                const req = newData.categories.find(c => c.id === catId).requirements.find(r => r.id === reqId);
+                req.selectedValue = val; req.code = val; req.status = val ? STATUS.PLANNED : STATUS.NOT_STARTED;
+                setData(newData);
+            };
+            const handleTextChange = (catId, reqId, val) => {
+                const newData = { ...data };
+                const req = newData.categories.find(c => c.id === catId).requirements.find(r => r.id === reqId);
+                req.selectedValue = val; req.code = val;
+                setData(newData);
+            };
+
+            // Calculate Progress
+            const stats = useMemo(() => {
+                let total = 0, completed = 0;
+                data.categories.forEach(c => c.requirements.forEach(r => {
+                    if (c.id !== 'free_electives') total++; // Don't count free electives in denominator yet
+                    if(r.status === STATUS.COMPLETED) completed++;
+                }));
+                return { percent: Math.round((completed/total)*100) };
+            }, [data]);
+
+            // CS Logic Visualizer
+            const csAreaStats = useMemo(() => {
                 const csCat = data.categories.find(c => c.id === "cs_electives");
                 if (!csCat) return null;
                 const counts = {};
@@ -458,34 +546,8 @@
                 return { counts, isPrimarySatisfied, isSecondarySatisfied, primaryAreaName: primaryArea ? primaryArea[0] : null };
             }, [data]);
 
-            const toggleStatus = (catId, reqId) => { /* same logic */ 
-                const newData = { ...data };
-                const req = newData.categories.find(c => c.id === catId).requirements.find(r => r.id === reqId);
-                const cycle = [STATUS.NOT_STARTED, STATUS.PLANNED, STATUS.IN_PROGRESS, STATUS.COMPLETED];
-                req.status = cycle[(cycle.indexOf(req.status) + 1) % cycle.length];
-                setData(newData);
-            };
-            const handleDropdown = (catId, reqId, val) => { /* same logic */ 
-                const newData = { ...data };
-                const req = newData.categories.find(c => c.id === catId).requirements.find(r => r.id === reqId);
-                req.selectedValue = val; req.code = val; req.status = val ? STATUS.PLANNED : STATUS.NOT_STARTED;
-                setData(newData);
-            };
-            const handleTextChange = (catId, reqId, val) => { /* same logic */ 
-                const newData = { ...data };
-                const req = newData.categories.find(c => c.id === catId).requirements.find(r => r.id === reqId);
-                req.selectedValue = val; req.code = val;
-                setData(newData);
-            };
-            const stats = useMemo(() => { /* same logic */ 
-                let total = 0, completed = 0;
-                data.categories.forEach(c => c.requirements.forEach(r => { total++; if(r.status === STATUS.COMPLETED) completed++; }));
-                return { percent: Math.round((completed/total)*100) };
-            }, [data]);
-
             return (
                 <div className="min-h-screen pb-12">
-                    {/* Header */}
                     <div className="bg-white shadow-sm sticky top-0 z-20">
                         <div className="max-w-6xl mx-auto px-4 py-4">
                             <div className="flex flex-col md:flex-row justify-between items-center gap-4 mb-4">
@@ -500,31 +562,22 @@
                                         <input type="file" accept=".pdf" className="hidden" onChange={(e) => handleFile(e, 'transcript')} disabled={isProcessing} />
                                     </label>
                                     <label className="bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-2 rounded-lg cursor-pointer flex items-center gap-2 transition shadow-sm">
-                                        {isProcessing && processStatus.includes('Catalog') ? <div className="loader"></div> : <i className="fas fa-book-open"></i>}
-                                        <span className="text-xs font-medium">Catalog</span>
+                                        <i className="fas fa-book-open"></i> <span className="text-xs font-medium">Catalog</span>
                                         <input type="file" accept=".pdf" className="hidden" onChange={(e) => handleFile(e, 'catalog')} disabled={isProcessing} />
                                     </label>
                                     <label className="bg-purple-600 hover:bg-purple-700 text-white px-3 py-2 rounded-lg cursor-pointer flex items-center gap-2 transition shadow-sm">
-                                        {isProcessing && processStatus.includes('Schedule') ? <div className="loader"></div> : <i className="fas fa-calendar-alt"></i>}
-                                        <span className="text-xs font-medium">Schedule</span>
+                                        <i className="fas fa-calendar-alt"></i> <span className="text-xs font-medium">Schedule</span>
                                         <input type="file" accept=".pdf" className="hidden" onChange={(e) => handleFile(e, 'schedule')} disabled={isProcessing} />
                                     </label>
                                 </div>
                             </div>
-                            
-                            {/* Navigation Tabs */}
                             <div className="flex gap-8 border-b mt-4">
-                                <button onClick={() => setActiveTab('tracker')} className={`pb-2 px-1 ${activeTab === 'tracker' ? 'tab-active' : 'tab-inactive'}`}>
-                                    Pathway Tracker
-                                </button>
-                                <button onClick={() => setActiveTab('electives')} className={`pb-2 px-1 ${activeTab === 'electives' ? 'tab-active' : 'tab-inactive'}`}>
-                                    Electives Explorer
-                                </button>
+                                <button onClick={() => setActiveTab('tracker')} className={`pb-2 px-1 ${activeTab === 'tracker' ? 'tab-active' : 'tab-inactive'}`}>Pathway Tracker</button>
+                                <button onClick={() => setActiveTab('electives')} className={`pb-2 px-1 ${activeTab === 'electives' ? 'tab-active' : 'tab-inactive'}`}>Electives Explorer</button>
                             </div>
                         </div>
                     </div>
 
-                    {/* Report Modal */}
                     {report && (
                         <div className="max-w-6xl mx-auto px-4 mt-6">
                             <div className={`p-4 rounded-lg border ${report.success ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'}`}>
@@ -540,21 +593,8 @@
                     )}
 
                     <div className="max-w-6xl mx-auto px-4 mt-6">
-                        {activeTab === 'electives' ? (
-                            <ElectivesExplorer />
-                        ) : (
+                        {activeTab === 'electives' ? <ElectivesExplorer /> : (
                             <div className="grid gap-8">
-                                {/* Progress Bar */}
-                                <div className="bg-white p-4 rounded-xl shadow-sm">
-                                    <div className="flex justify-between text-xs mb-1 text-gray-600">
-                                        <span>Total Degree Progress</span>
-                                        <span>{stats.percent}% Completed</span>
-                                    </div>
-                                    <div className="w-full bg-gray-200 rounded-full h-2.5">
-                                        <div className="bg-green-500 h-2.5 rounded-full transition-all duration-500" style={{ width: `${stats.percent}%` }}></div>
-                                    </div>
-                                </div>
-
                                 {data.categories.map(cat => (
                                     <div key={cat.id} className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
                                         <div className={`px-6 py-4 border-b border-gray-100 ${cat.color} bg-opacity-30`}>
@@ -562,7 +602,6 @@
                                             {cat.description && <p className="text-sm opacity-70">{cat.description}</p>}
                                         </div>
                                         
-                                        {/* CS Logic Header */}
                                         {cat.id === "cs_electives" && csAreaStats && (
                                             <div className="px-6 py-2 bg-gray-50 border-b text-xs flex gap-4">
                                                 <span className={csAreaStats.isPrimarySatisfied ? 'text-green-600 font-bold' : 'text-gray-500'}>
@@ -575,6 +614,9 @@
                                         )}
 
                                         <div className="divide-y divide-gray-50">
+                                            {cat.requirements.length === 0 && cat.id === 'free_electives' && (
+                                                <div className="p-4 text-sm text-gray-400 italic">No extra courses detected yet. Upload a transcript to populate.</div>
+                                            )}
                                             {cat.requirements.map(req => (
                                                 <div key={req.id} className="p-4 hover:bg-gray-50 flex justify-between items-center gap-4">
                                                     <div className="flex-1">
@@ -587,7 +629,7 @@
                                                                     {Object.entries(data.courseCatalogs[req.dbKey]).map(([area, courses]) => (
                                                                         <optgroup key={area} label={area}>
                                                                             {courses.map(c => {
-                                                                                const isOffered = data.offeredCourses.includes(c.code);
+                                                                                const isOffered = data.offeredCourses && data.offeredCourses.includes(c.code);
                                                                                 return (
                                                                                     <option key={c.code} value={c.code} className={isOffered ? "font-bold text-green-700" : ""}>
                                                                                         {isOffered ? "✓ " : ""}{c.code} - {c.name}
@@ -597,8 +639,8 @@
                                                                         </optgroup>
                                                                     ))}
                                                                 </select>
-                                                                {req.selectedValue && data.offeredCourses.includes(req.selectedValue) && (
-                                                                    <span className="bg-green-100 text-green-800 text-[10px] font-bold px-2 py-1 rounded">OFFERED</span>
+                                                                {req.selectedValue && data.offeredCourses && data.offeredCourses.includes(req.selectedValue) && (
+                                                                    <span className="badge-offered">OFFERED</span>
                                                                 )}
                                                             </div>
                                                         ) : req.type === 'text_input' ? (
@@ -614,8 +656,8 @@
                                                             <div className="flex items-center gap-2">
                                                                 <span className="font-semibold text-gray-800">{req.code || (req.taken || req.alternatives?.[0] || req.name)}</span>
                                                                 {req.grade && <span className="text-xs bg-gray-100 px-2 py-0.5 rounded border">Grade: {req.grade}</span>}
-                                                                {!req.taken && req.alternatives && req.alternatives.some(alt => data.offeredCourses.includes(alt)) && (
-                                                                    <span className="bg-green-100 text-green-800 text-[10px] font-bold px-2 py-0.5 rounded">Option Offered</span>
+                                                                {!req.taken && req.alternatives && req.alternatives.some(alt => data.offeredCourses && data.offeredCourses.includes(alt)) && (
+                                                                    <span className="badge-offered">Option Offered</span>
                                                                 )}
                                                             </div>
                                                         )}
