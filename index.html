@@ -1,0 +1,544 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Wai Ming's Pathway | DDP (CS + Finance)</title>
+    
+    <!-- React & Babel -->
+    <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- FontAwesome -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    
+    <!-- PDF.js for Parsing -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+    
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #f3f4f6; }
+        .course-card { transition: all 0.2s; }
+        .course-card:hover { transform: translateY(-2px); }
+        select { background-image: none; }
+        
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #f1f1f1; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+        
+        /* Loading Spinner */
+        .loader {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #3b82f6;
+            border-radius: 50%;
+            width: 16px;
+            height: 16px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        // Set worker for PDF.js
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+
+        const { useState, useEffect, useMemo, useRef } = React;
+
+        // --- DATA CONSTANTS ---
+        const STATUS = {
+            COMPLETED: 'completed',
+            IN_PROGRESS: 'in-progress',
+            PLANNED: 'planned',
+            NOT_STARTED: 'not-started'
+        };
+
+        // --- DEFAULT DATABASES (Fallbacks) ---
+        const DEFAULT_COMP_DB = {
+            "AI / Theory": [
+                { code: "COMP 3211", name: "Fundamentals of Artificial Intelligence" },
+                { code: "COMP 3721", name: "Theory of Computation" },
+                { code: "COMP 4211", name: "Machine Learning" },
+                { code: "COMP 4221", name: "Intro to Natural Language Processing" },
+                { code: "COMP 4331", name: "Data Mining" },
+                { code: "COMP 4421", name: "Image Processing" },
+                { code: "COMP 4471", name: "Deep Learning in Computer Vision" }
+            ],
+            "Systems / Networking": [
+                { code: "COMP 3631", name: "Cryptography" },
+                { code: "COMP 4511", name: "System and Kernel Programming in Linux" },
+                { code: "COMP 4611", name: "Design and Analysis of Computer Architectures" },
+                { code: "COMP 4621", name: "Computer and Communication Networks" },
+                { code: "COMP 4634", name: "Cybersecurity" },
+                { code: "COMP 4651", name: "Cloud Computing and Big Data Systems" }
+            ],
+            "Software / Database": [
+                { code: "COMP 3021", name: "Java Programming" },
+                { code: "COMP 3311", name: "Database Management Systems" },
+                { code: "COMP 4021", name: "Internet Computing" }
+            ],
+            "Vision / Graphics": [
+                { code: "COMP 4411", name: "Computer Graphics" },
+                { code: "COMP 4461", name: "Human-Computer Interaction" }
+            ],
+            "Other": []
+        };
+
+        const DEFAULT_FINA_DB = {
+            "Corporate Finance": [
+                { code: "FINA 4013", name: "Corporate Valuation" },
+                { code: "FINA 4203", name: "Mergers, Acquisitions, and Corporate Restructuring" },
+                { code: "FINA 4603", name: "Venture Capital Financing" }
+            ],
+            "Investments": [
+                { code: "FINA 4303", name: "Fixed Income Securities" },
+                { code: "FINA 4513", name: "Risk Management" }
+            ],
+            "FinTech": [
+                { code: "FINA 4703", name: "ESG Investing" },
+                { code: "FINA 4713", name: "Intro to AI and Big Data in Finance" }
+            ],
+            "Other": []
+        };
+
+        const initialData = {
+            studentName: "LAU, Wai Ming",
+            studentId: "21011686",
+            // We store the databases inside the saved data so they persist updates
+            courseCatalogs: {
+                COMP: DEFAULT_COMP_DB,
+                FINA: DEFAULT_FINA_DB
+            },
+            categories: [
+                {
+                    id: "eng_fund",
+                    title: "Engineering Fundamentals",
+                    color: "bg-blue-100 text-blue-800",
+                    requirements: [
+                        { id: "intro_cs", name: "Intro to CS", alternatives: ["COMP 1021", "COMP 1022P"], status: STATUS.COMPLETED, taken: "COMP 1021", grade: "B" },
+                        { id: "calc_1", name: "Calculus I", alternatives: ["MATH 1012", "MATH 1013", "MATH 1023"], status: STATUS.COMPLETED, taken: "MATH 1013", grade: "T" },
+                        { id: "calc_2", name: "Calculus II", alternatives: ["MATH 1014", "MATH 1024"], status: STATUS.COMPLETED, taken: "MATH 1014", grade: "C-" },
+                        { id: "lin_alg", name: "Linear Algebra", alternatives: ["MATH 2111", "MATH 2121", "MATH 2131"], status: STATUS.COMPLETED, taken: "MATH 2111", grade: "C+" },
+                        { id: "sci_chem", name: "Chemistry", alternatives: ["CHEM 1020", "CHEM 1008"], status: STATUS.COMPLETED, taken: "CHEM 1020", grade: "T" },
+                        { id: "sci_phys", name: "Physics", alternatives: ["PHYS 1112", "PHYS 1312", "PHYS 1101"], status: STATUS.COMPLETED, taken: "PHYS 1101", grade: "A" },
+                        { id: "sci_bio", name: "Biology (Science Elective)", alternatives: ["LIFS 1901"], status: STATUS.COMPLETED, taken: "LIFS 1901", grade: "T" },
+                        { id: "eng_intro", name: "Engg Intro", alternatives: ["CENG 1500", "ELEC 1100", "MECH 1901"], status: STATUS.COMPLETED, taken: "CENG 1500", grade: "A-", note: "SENG Intro Requirement" },
+                        { id: "tech_comm_1", name: "Tech Comm I", alternatives: ["LANG 2030"], status: STATUS.COMPLETED, note: "Waived for DDP or met by LANG 1404 track" },
+                    ]
+                },
+                {
+                    id: "cs_core",
+                    title: "Computer Science Core",
+                    color: "bg-indigo-100 text-indigo-800",
+                    requirements: [
+                        { id: "comp_2011", name: "Programming with C++", code: "COMP 2011", status: STATUS.COMPLETED, grade: "C-", prereqs: ["COMP 1021"] },
+                        { id: "comp_2012", name: "OOP & Data Structures", code: "COMP 2012", status: STATUS.COMPLETED, grade: "C", prereqs: ["COMP 2011"] },
+                        { id: "comp_2611", name: "Computer Organization", code: "COMP 2611", status: STATUS.COMPLETED, grade: "B-", prereqs: ["COMP 1021"] },
+                        { id: "comp_2711", name: "Discrete Math Tools", code: "COMP 2711", status: STATUS.COMPLETED, grade: "B-", prereqs: ["MATH 1013"] },
+                        { id: "comp_3111", name: "Software Engineering", code: "COMP 3111", status: STATUS.NOT_STARTED, prereqs: ["COMP 2012"] },
+                        { id: "comp_3511", name: "Operating Systems", code: "COMP 3511", status: STATUS.NOT_STARTED, prereqs: ["COMP 2611"] },
+                        { id: "comp_3711", name: "Algorithms", code: "COMP 3711", status: STATUS.IN_PROGRESS, prereqs: ["COMP 2711", "Calculus"] },
+                        { id: "comp_4900", name: "Acad. & Prof. Dev.", code: "COMP 4900", status: STATUS.IN_PROGRESS, note: "Must take every term in residency" },
+                        { id: "prob_stat", name: "Probability/Stats", alternatives: ["ELEC 2600", "IEDA 2520", "MATH 2411"], status: STATUS.IN_PROGRESS, taken: "IEDA 2520" },
+                        { id: "fyp", name: "Final Year Project", alternatives: ["COMP 4981", "COMP 4981H"], status: STATUS.NOT_STARTED, credits: 6 },
+                        { id: "ind_exp", name: "Industrial Experience", code: "COMP 1991", status: STATUS.NOT_STARTED, note: "Usually taken in Winter/Summer" },
+                        { id: "lang_4030", name: "Tech Comm II", code: "LANG 4030", status: STATUS.NOT_STARTED, note: "For CSE/CPEG" }
+                    ]
+                },
+                {
+                    id: "cs_electives",
+                    title: "CS Electives (5 Courses)",
+                    color: "bg-purple-100 text-purple-800",
+                    description: "3 from one area, 2 from outside. Areas: AI, Vision, Software, Systems.",
+                    requirements: [
+                        { id: "elec_1", name: "Elective 1", code: "Select Elective", status: STATUS.NOT_STARTED, type: "dropdown", dbKey: "COMP" },
+                        { id: "elec_2", name: "Elective 2", code: "Select Elective", status: STATUS.NOT_STARTED, type: "dropdown", dbKey: "COMP" },
+                        { id: "elec_3", name: "Elective 3", code: "Select Elective", status: STATUS.NOT_STARTED, type: "dropdown", dbKey: "COMP" },
+                        { id: "elec_4", name: "Elective 4", code: "Select Elective", status: STATUS.NOT_STARTED, type: "dropdown", dbKey: "COMP" },
+                        { id: "elec_5", name: "Elective 5", code: "Select Elective", status: STATUS.NOT_STARTED, type: "dropdown", dbKey: "COMP" },
+                    ]
+                },
+                {
+                    id: "biz_core",
+                    title: "Business Core (Finance)",
+                    color: "bg-emerald-100 text-emerald-800",
+                    requirements: [
+                        { id: "acct_2010", name: "Accounting I", code: "ACCT 2010", status: STATUS.COMPLETED, grade: "B+" },
+                        { id: "acct_2200", name: "Accounting II", code: "ACCT 2200", status: STATUS.COMPLETED, grade: "B-" },
+                        { id: "econ_2113", name: "Microeconomics", code: "ECON 2113", status: STATUS.COMPLETED, grade: "A" },
+                        { id: "econ_2123", name: "Macroeconomics", code: "ECON 2123", status: STATUS.COMPLETED, grade: "B" },
+                        { id: "isom_2500", name: "Business Stats", code: "ISOM 2500", status: STATUS.COMPLETED, grade: "B", note: "Or MATH 2411" },
+                        { id: "isom_2600", name: "Business Analytics", code: "ISOM 2600", status: STATUS.COMPLETED, grade: "A-" },
+                        { id: "isom_2700", name: "Ops Management", code: "ISOM 2700", status: STATUS.COMPLETED, grade: "A-" },
+                        { id: "mark_2120", name: "Marketing Mgmt", code: "MARK 2120", status: STATUS.COMPLETED, grade: "A-" },
+                        { id: "mgmt_2010", name: "Biz Ethics", code: "MGMT 2010", status: STATUS.COMPLETED, grade: "A" },
+                        { id: "mgmt_2110", name: "Org Behavior", code: "MGMT 2110", status: STATUS.COMPLETED, grade: "A+" },
+                        { id: "fina_2303", name: "Financial Mgmt", code: "FINA 2303", status: STATUS.COMPLETED, grade: "A" },
+                        { id: "mgmt_2130", name: "Biz Ethics & Soc Resp", code: "MGMT 2130", status: STATUS.IN_PROGRESS },
+                        { id: "mgmt_3140", name: "Negotiation", code: "MGMT 3140", status: STATUS.IN_PROGRESS, note: "DDP Requirement" }
+                    ]
+                },
+                {
+                    id: "fina_major",
+                    title: "Finance Major Required",
+                    color: "bg-teal-100 text-teal-800",
+                    requirements: [
+                        { id: "fina_3103", name: "Inter. Investments", code: "FINA 3103", status: STATUS.IN_PROGRESS, prereqs: ["FINA 2303"] },
+                        { id: "fina_3203", name: "Derivative Securities", code: "FINA 3203", status: STATUS.NOT_STARTED, prereqs: ["FINA 3103"] },
+                        { id: "fina_3303", name: "Inter. Corp Finance", code: "FINA 3303", status: STATUS.NOT_STARTED, prereqs: ["FINA 2303"] },
+                        { id: "fina_3001", name: "Key Skills Finance", code: "FINA 3001", status: STATUS.IN_PROGRESS },
+                        { id: "fina_3810", name: "Bloomberg Cert", code: "FINA 3810", status: STATUS.IN_PROGRESS },
+                        { id: "fina_elec_1", name: "Finance Elective 1 (3000+)", code: "Select FINA Elective", status: STATUS.NOT_STARTED, type: "dropdown", dbKey: "FINA" },
+                        { id: "fina_elec_2", name: "Finance Elective 2 (3000+)", code: "Select FINA Elective", status: STATUS.NOT_STARTED, type: "dropdown", dbKey: "FINA" },
+                        { id: "fina_elec_3", name: "Finance Elective 3 (3000+)", code: "Select FINA Elective", status: STATUS.NOT_STARTED, type: "dropdown", dbKey: "FINA" },
+                    ]
+                },
+                {
+                    id: "ddp_extras",
+                    title: "Dual Degree (T&M) Specifics",
+                    color: "bg-orange-100 text-orange-800",
+                    requirements: [
+                        { id: "temg_1010", name: "T&M Prof Activities", code: "TEMG 1010", status: STATUS.IN_PROGRESS },
+                        { id: "temg_3950", name: "Case Analysis", code: "TEMG 3950", status: STATUS.COMPLETED, grade: "B+" },
+                        { id: "temg_4950", name: "Capstone Project", code: "TEMG 4950", status: STATUS.NOT_STARTED },
+                        { id: "engg_2010", name: "Engg Seminar", code: "ENGG 2010", status: STATUS.IN_PROGRESS },
+                        { id: "bien_1610", name: "Synthetic Bio (Science)", code: "BIEN 1610", status: STATUS.IN_PROGRESS },
+                    ]
+                }
+            ]
+        };
+
+        const App = () => {
+            const [data, setData] = useState(() => {
+                const saved = localStorage.getItem('my_pathway_data_v7');
+                if (saved) {
+                    const parsed = JSON.parse(saved);
+                    // Ensure courseCatalogs exists in old saves
+                    if (!parsed.courseCatalogs) parsed.courseCatalogs = initialData.courseCatalogs;
+                    return parsed;
+                }
+                return initialData;
+            });
+            const [filter, setFilter] = useState('all');
+            const [isProcessing, setIsProcessing] = useState(false);
+            const [processStatus, setProcessStatus] = useState("");
+            const [report, setReport] = useState(null);
+            
+            useEffect(() => {
+                localStorage.setItem('my_pathway_data_v7', JSON.stringify(data));
+            }, [data]);
+
+            // --- PDF PARSING HELPERS ---
+            const getTextFromPDF = async (file) => {
+                const arrayBuffer = await file.arrayBuffer();
+                const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+                let fullText = "";
+                for (let i = 1; i <= pdf.numPages; i++) {
+                    const page = await pdf.getPage(i);
+                    const textContent = await page.getTextContent();
+                    fullText += textContent.items.map(item => item.str).join(" ") + "\n";
+                }
+                return fullText.replace(/\s+/g, ' '); // Normalize spaces
+            };
+
+            // --- 1. TRANSCRIPT PARSER ---
+            const parseTranscript = async (file) => {
+                setIsProcessing(true);
+                setProcessStatus("Reading Transcript...");
+                try {
+                    const text = await getTextFromPDF(file);
+                    // Regex for Transcript: Code (e.g. COMP 2011) ... Grade (A, B, T, P)
+                    const updates = [];
+                    const newData = JSON.parse(JSON.stringify(data));
+                    
+                    const courseRegex = /([A-Z]{4})\s?(\d{4}[A-Z]?)/g;
+                    let match;
+                    while ((match = courseRegex.exec(text)) !== null) {
+                        const code = `${match[1]} ${match[2]}`;
+                        // Look for grade in next 80 chars
+                        const window = text.substring(match.index + match[0].length, match.index + 100);
+                        const gradeMatch = window.match(/\s([A-D][\+\-]?|F|T|P|PP|AU)(\s|$)/);
+                        
+                        if (gradeMatch) {
+                            const grade = gradeMatch[1];
+                            let status = (grade === 'PP') ? STATUS.IN_PROGRESS : STATUS.COMPLETED;
+                            
+                            // Apply to data
+                            newData.categories.forEach(cat => {
+                                cat.requirements.forEach(req => {
+                                    let matchedReq = false;
+                                    if(req.code && req.code.replace(/\s/g,'') === code.replace(/\s/g,'')) matchedReq = true;
+                                    if(req.alternatives && req.alternatives.some(a => a.replace(/\s/g,'') === code.replace(/\s/g,''))) matchedReq = true;
+                                    
+                                    if(matchedReq && (req.status !== status || req.grade !== grade)) {
+                                        updates.push(`Updated: ${req.name} (${code}) to ${status} [${grade}]`);
+                                        req.status = status;
+                                        req.grade = grade;
+                                        if(!req.code) req.taken = code; // For alternatives
+                                    }
+                                });
+                            });
+                        }
+                    }
+                    setData(newData);
+                    setReport({ title: "Transcript Update", success: true, logs: updates.length ? updates : ["No new changes found."] });
+                } catch(e) {
+                    setReport({ title: "Error", success: false, logs: ["Failed to parse transcript."] });
+                } finally {
+                    setIsProcessing(false);
+                }
+            };
+
+            // --- 2. CATALOG PARSER ---
+            const parseCatalog = async (file) => {
+                setIsProcessing(true);
+                setProcessStatus("Updating Catalog Database...");
+                try {
+                    const text = await getTextFromPDF(file);
+                    const newCourses = [];
+                    const newData = JSON.parse(JSON.stringify(data));
+                    
+                    // Regex for Catalog: COMP 1234 Title ... Credit
+                    // Matches "COMP 1234" followed by text until "Credit" or end
+                    // HKUST Catalog format usually: "COMP 1234 Course Title ... 3 Credit(s)"
+                    // Or on separate lines. We look for the Pattern CODE -> TITLE
+                    
+                    const catalogRegex = /([A-Z]{4})\s+(\d{4}[A-Z]?)\s+(.+?)(?=\s+\d+\s+Credit|\s+Previous|\s+Prerequisite|\s+Exclusion|\s+Description)/g;
+                    
+                    let match;
+                    let count = 0;
+                    
+                    while ((match = catalogRegex.exec(text)) !== null) {
+                        const subject = match[1]; // COMP or FINA
+                        const number = match[2];  // 4021
+                        const rawTitle = match[3].trim();
+                        const code = `${subject} ${number}`;
+                        
+                        // Clean Title (remove excess info if regex grabbed too much)
+                        const title = rawTitle.replace(/(\d+ Credit.*)/, '').trim();
+
+                        if (subject === 'COMP' || subject === 'FINA') {
+                            const db = newData.courseCatalogs[subject];
+                            // Check if exists in any category
+                            let exists = false;
+                            for (const cat in db) {
+                                if (db[cat].some(c => c.code === code)) exists = true;
+                            }
+                            
+                            if (!exists) {
+                                // Add to "Other" or "New" category if not found
+                                if (!db["New / Uncategorized"]) db["New / Uncategorized"] = [];
+                                db["New / Uncategorized"].push({ code, name: title });
+                                newCourses.push(`${code}: ${title}`);
+                                count++;
+                            }
+                        }
+                    }
+                    
+                    setData(newData);
+                    setReport({ title: "Catalog Update", success: true, logs: count > 0 ? newCourses : ["No new courses found in this file."] });
+
+                } catch(e) {
+                    console.error(e);
+                    setReport({ title: "Error", success: false, logs: ["Failed to parse catalog. Ensure it is a valid HKUST Course Catalog PDF."] });
+                } finally {
+                    setIsProcessing(false);
+                }
+            };
+
+            const handleFile = (e, type) => {
+                const file = e.target.files[0];
+                if (!file) return;
+                if (type === 'transcript') parseTranscript(file);
+                else if (type === 'catalog') parseCatalog(file);
+                e.target.value = null; // reset
+            };
+
+            // Logic for CS Elective Validation
+            const csAreaStats = useMemo(() => {
+                const csCat = data.categories.find(c => c.id === "cs_electives");
+                if (!csCat) return null;
+                const counts = {};
+                // Flatten DB for lookup
+                const compDbFlat = Object.values(data.courseCatalogs.COMP).flat();
+                
+                csCat.requirements.forEach(req => {
+                    if (req.selectedValue) {
+                        // Attempt to find area from DB
+                        let foundArea = "Unknown";
+                        for (const [area, courses] of Object.entries(data.courseCatalogs.COMP)) {
+                             if (courses.some(c => c.code === req.selectedValue)) {
+                                 foundArea = area; break;
+                             }
+                        }
+                        counts[foundArea] = (counts[foundArea] || 0) + 1;
+                    }
+                });
+                const primaryArea = Object.entries(counts).find(([area, count]) => count >= 3 && area !== 'New / Uncategorized' && area !== 'Other');
+                const isPrimarySatisfied = !!primaryArea;
+                let outsideCount = 0;
+                if (primaryArea) {
+                     Object.entries(counts).forEach(([area, count]) => { if (area !== primaryArea[0]) outsideCount += count; });
+                }
+                const isSecondarySatisfied = outsideCount >= 2;
+                return { counts, isPrimarySatisfied, isSecondarySatisfied, primaryAreaName: primaryArea ? primaryArea[0] : null };
+            }, [data]);
+
+            // UI Helpers
+            const toggleStatus = (catId, reqId) => {
+                const newData = { ...data };
+                const cat = newData.categories.find(c => c.id === catId);
+                const req = cat.requirements.find(r => r.id === reqId);
+                const cycle = [STATUS.NOT_STARTED, STATUS.PLANNED, STATUS.IN_PROGRESS, STATUS.COMPLETED];
+                req.status = cycle[(cycle.indexOf(req.status) + 1) % cycle.length];
+                setData(newData);
+            };
+
+            const handleDropdown = (catId, reqId, val) => {
+                const newData = { ...data };
+                const req = newData.categories.find(c => c.id === catId).requirements.find(r => r.id === reqId);
+                req.selectedValue = val;
+                req.code = val;
+                req.status = val ? STATUS.PLANNED : STATUS.NOT_STARTED;
+                setData(newData);
+            };
+
+            // Stats
+            const stats = useMemo(() => {
+                let total = 0, completed = 0;
+                data.categories.forEach(c => c.requirements.forEach(r => {
+                    total++;
+                    if(r.status === STATUS.COMPLETED) completed++;
+                }));
+                return { percent: Math.round((completed/total)*100) };
+            }, [data]);
+
+            return (
+                <div className="min-h-screen pb-12">
+                    {/* Header */}
+                    <div className="bg-white shadow-sm sticky top-0 z-20">
+                        <div className="max-w-5xl mx-auto px-4 py-4">
+                            <div className="flex flex-col md:flex-row justify-between items-center gap-4 mb-4">
+                                <div>
+                                    <h1 className="text-xl font-bold text-gray-800">{data.studentName}</h1>
+                                    <p className="text-sm text-gray-500">DDP: BEng (COMP) & BBA (FINA) • ID: {data.studentId}</p>
+                                </div>
+                                <div className="flex gap-2 items-center flex-wrap justify-end">
+                                    <label className="bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-2 rounded-lg cursor-pointer flex items-center gap-2 transition shadow-sm">
+                                        {isProcessing && processStatus.includes('Transcript') ? <div className="loader"></div> : <i className="fas fa-file-invoice"></i>}
+                                        <span className="text-xs font-medium">Update Transcript</span>
+                                        <input type="file" accept=".pdf" className="hidden" onChange={(e) => handleFile(e, 'transcript')} disabled={isProcessing} />
+                                    </label>
+                                    
+                                    <label className="bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-2 rounded-lg cursor-pointer flex items-center gap-2 transition shadow-sm">
+                                        {isProcessing && processStatus.includes('Catalog') ? <div className="loader"></div> : <i className="fas fa-book-open"></i>}
+                                        <span className="text-xs font-medium">Update Catalog</span>
+                                        <input type="file" accept=".pdf" className="hidden" onChange={(e) => handleFile(e, 'catalog')} disabled={isProcessing} />
+                                    </label>
+                                </div>
+                            </div>
+                            <div className="w-full bg-gray-200 rounded-full h-2.5">
+                                <div className="bg-green-500 h-2.5 rounded-full transition-all duration-500" style={{ width: `${stats.percent}%` }}></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Report Modal */}
+                    {report && (
+                        <div className="max-w-5xl mx-auto px-4 mt-6">
+                            <div className={`p-4 rounded-lg border ${report.success ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'}`}>
+                                <div className="flex justify-between">
+                                    <h3 className="font-bold">{report.title}</h3>
+                                    <button onClick={() => setReport(null)}><i className="fas fa-times"></i></button>
+                                </div>
+                                <div className="mt-2 max-h-32 overflow-y-auto bg-white p-2 rounded text-xs font-mono">
+                                    {report.logs.map((l, i) => <div key={i}>{l}</div>)}
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Content */}
+                    <div className="max-w-5xl mx-auto px-4 grid gap-8 mt-6">
+                        {data.categories.map(cat => {
+                            if(filter !== 'all') { /* implement filter logic if needed */ }
+                            
+                            return (
+                                <div key={cat.id} className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+                                    <div className={`px-6 py-4 border-b border-gray-100 ${cat.color} bg-opacity-30`}>
+                                        <h2 className="text-lg font-bold">{cat.title}</h2>
+                                    </div>
+                                    
+                                    {/* CS Logic Header */}
+                                    {cat.id === "cs_electives" && csAreaStats && (
+                                        <div className="px-6 py-2 bg-gray-50 border-b text-xs flex gap-4">
+                                            <span className={csAreaStats.isPrimarySatisfied ? 'text-green-600' : 'text-gray-500'}>
+                                                <i className={`fas ${csAreaStats.isPrimarySatisfied ? 'fa-check' : 'fa-circle'}`}></i> 3 from {csAreaStats.primaryAreaName || 'One Area'}
+                                            </span>
+                                            <span className={csAreaStats.isSecondarySatisfied ? 'text-green-600' : 'text-gray-500'}>
+                                                <i className={`fas ${csAreaStats.isSecondarySatisfied ? 'fa-check' : 'fa-circle'}`}></i> 2 from Outside
+                                            </span>
+                                        </div>
+                                    )}
+
+                                    <div className="divide-y divide-gray-50">
+                                        {cat.requirements.map(req => (
+                                            <div key={req.id} className="p-4 hover:bg-gray-50 flex justify-between items-center gap-4">
+                                                <div className="flex-1">
+                                                    {req.type === 'dropdown' ? (
+                                                        <select className="w-full p-2 border rounded text-sm bg-transparent" 
+                                                            value={req.selectedValue || ""} 
+                                                            onChange={(e) => handleDropdown(cat.id, req.id, e.target.value)}>
+                                                            <option value="">-- Select Course --</option>
+                                                            {/* Dynamically load from stored DB */}
+                                                            {Object.entries(data.courseCatalogs[req.dbKey]).map(([area, courses]) => (
+                                                                <optgroup key={area} label={area}>
+                                                                    {courses.map(c => <option key={c.code} value={c.code}>{c.code} - {c.name}</option>)}
+                                                                </optgroup>
+                                                            ))}
+                                                        </select>
+                                                    ) : (
+                                                        <div className="font-semibold text-gray-800">
+                                                            {req.code || (req.taken || req.alternatives?.[0] || req.name)}
+                                                            {req.grade && <span className="ml-2 text-xs bg-gray-100 px-2 py-0.5 rounded">Grade: {req.grade}</span>}
+                                                        </div>
+                                                    )}
+                                                    {req.alternatives && !req.taken && <div className="text-xs text-gray-500 mt-1">Options: {req.alternatives.join(", ")}</div>}
+                                                </div>
+                                                
+                                                <div className="cursor-pointer" onClick={() => toggleStatus(cat.id, req.id)}>
+                                                    <div className={`w-8 h-8 rounded-full flex items-center justify-center border-2 ${
+                                                        req.status === STATUS.COMPLETED ? 'bg-green-500 text-white border-green-600' : 
+                                                        req.status === STATUS.IN_PROGRESS ? 'bg-yellow-400 text-white border-yellow-500' : 
+                                                        req.status === STATUS.PLANNED ? 'bg-blue-400 text-white border-blue-500' : 'bg-gray-100 text-gray-300'
+                                                    }`}>
+                                                        <i className={`fas ${req.status === STATUS.COMPLETED ? 'fa-check' : req.status === STATUS.IN_PROGRESS ? 'fa-spinner' : req.status === STATUS.PLANNED ? 'fa-calendar' : 'fa-circle'}`}></i>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            );
+                        })}
+                    </div>
+                    
+                    <div className="text-center text-gray-400 text-sm mt-12 mb-8">
+                        <button onClick={() => { if(confirm("Reset all data?")) { localStorage.clear(); window.location.reload(); } }} className="text-red-400 underline">Reset All Data</button>
+                    </div>
+                </div>
+            );
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
